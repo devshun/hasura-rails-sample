@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  rails:
+    build:
+      dockerfile: Dockerfile
+      context: ./rails
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    ports:
+        - 3000:3000
+    volumes:
+      - ./rails:/rails-app
+    tty: true
+    stdin_open: true
+  hasura:
+    image: hasura/graphql-engine:v2.1.1.cli-migrations-v3
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    restart: always
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:password@db:5432/postgres
+      HASURA_GRAPHQL_ENABLE_TELEMETRY: 'false'
+      HASURA_GRAPHQL_ENABLE_CONSOLE: 'true'
+      HASURA_GRAPHQL_DEV_MODE: 'true'
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: anonymous
+      HASURA_GRAPHQL_ADMIN_SECRET: devenvsecret
+  db:
+    image: postgres:12
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: password
+volumes:
+  db_data:
